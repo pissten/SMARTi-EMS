@@ -7,9 +7,13 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 python3-pip \
  && rm -rf /var/lib/apt/lists/*
 
+# Copy requirements
 COPY app/requirements.txt /app/requirements.txt
-RUN pip3 install --no-cache-dir -r /app/requirements.txt
 
+# Install deps (prefer wheels)
+RUN pip3 install --no-cache-dir --prefer-binary -r /app/requirements.txt
+
+# Copy app + s6 services
 COPY app /app
 COPY rootfs/ /
 
