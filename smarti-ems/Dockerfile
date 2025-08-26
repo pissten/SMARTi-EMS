@@ -1,16 +1,18 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest
+# Python preinstalled (multi-arch manifest)
+ARG BUILD_FROM=ghcr.io/hassio-addons/base-python:14.3.3
 FROM ${BUILD_FROM}
-SHELL ["/bin/ash","-o","pipefail","-c"]
 
-RUN apk add --no-cache python3 py3-pip && \
-    python3 -m ensurepip || true && \
-    pip3 install --no-cache-dir --upgrade pip
+# If the base uses ash, leave this out; it's optional
+# SHELL ["/bin/ash","-o","pipefail","-c"]
 
+# Python deps
 COPY app/requirements.txt /app/requirements.txt
 RUN pip3 install --no-cache-dir -r /app/requirements.txt
 
+# App + s6 services
 COPY app /app
 COPY rootfs/ /
 
+# Permissions & env
 RUN chmod +x /etc/services.d/ems/run /etc/cont-init.d/00-fix-perms
 ENV PYTHONUNBUFFERED=1
