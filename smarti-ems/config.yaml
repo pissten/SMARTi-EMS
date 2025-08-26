@@ -1,11 +1,10 @@
 # smarti-ems/config.yaml
 name: SMARTi EMS
-version: "1.0.5"     # bump when you push new images
+version: "1.0.6"   # bump
 slug: smarti_ems
 arch: [amd64, aarch64, armv7]
 ingress: true
 ingress_entry: /
 homeassistant_api: true
 hassio_api: true
-# all lowercase, hyphens; Supervisor will substitute {arch}
 image: ghcr.io/prosono/{arch}-addon-smarti-ems
