@@ -2,7 +2,7 @@ import os
 import json
 import httpx
 import websockets
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN")
 HA_REST = "http://supervisor/core/api"
@@ -13,26 +13,38 @@ class HA:
     def __init__(self):
         self.http = httpx.AsyncClient(timeout=30.0, headers=HEADERS)
 
+    async def get_states(self) -> List[Dict[str, Any]]:
+        r = await self.http.get(f"{HA_REST}/states")
+        return r.json() if r.status_code == 200 else []
+
     async def get_state(self, entity_id: str) -> Optional[Dict[str, Any]]:
         r = await self.http.get(f"{HA_REST}/states/{entity_id}")
-        if r.status_code == 200:
-            return r.json()
-        return None
+        return r.json() if r.status_code == 200 else None
+
+    async def list_entities(self, domains: List[str]=None) -> List[Dict[str, Any]]:
+        domains = domains or []
+        data = await self.get_states()
+        if not domains:
+            return data
+        return [s for s in data if (s.get("entity_id","").split(".")[0] in domains)]
 
     async def call_service(self, domain: str, service: str, data: Dict[str, Any]):
         return await self.http.post(f"{HA_REST}/services/{domain}/{service}", json=data)
 
-    async def set_input_text(self, entity_id: str, value: str):
-        return await self.call_service("input_text", "set_value", {"entity_id": entity_id, "value": value})
+    async def mqtt_publish(self, topic: str, payload: str, retain: bool=True):
+        data = {"topic": topic, "payload": payload, "retain": retain}
+        return await self.call_service("mqtt", "publish", data)
 
-    async def set_input_boolean(self, entity_id: str, turn_on: bool):
-        return await self.call_service("input_boolean", "turn_on" if turn_on else "turn_off", {"entity_id": entity_id})
-
-    async def get_addon_options(self) -> Dict[str, Any]:
-        # Read add-on options via Hass.io API
-        # We need the slug from config.yaml; keep in sync if you change it
-        addon_slug = os.environ.get("HOSTNAME", "smarti_ems")
-        # Fallback: Supervisor provides our add-on slug at /info; use /options endpoint for exact slug
-        # For simplicity, use the direct 'self/options' endpoint
-        r = await self.http.get("http://supervisor/addons/self/options", headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}"})
-        return r.json() if r.status_code == 200 else {}
+    async def ws_events(self):
+        async with websockets.connect(HA_WS, extra_headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}"}) as ws:
+            hello = json.loads(await ws.recv())
+            assert hello.get("type") == "auth_required"
+            await ws.send(json.dumps({"type": "auth", "access_token": SUPERVISOR_TOKEN}))
+            auth_ok = json.loads(await ws.recv())
+            assert auth_ok.get("type") == "auth_ok"
+            await ws.send(json.dumps({"id": 1, "type": "subscribe_events", "event_type": "state_changed"}))
+            ack = json.loads(await ws.recv())
+            assert ack.get("success")
+            while True:
+                msg = json.loads(await ws.recv())
+                yield msg

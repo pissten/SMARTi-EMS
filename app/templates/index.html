@@ -2,56 +2,149 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>SMARTi EMS</title>
     <style>
       body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 16px; }
-      .card { padding:16px; border:1px solid #e5e7eb; border-radius:12px; box-shadow: 0 1px 2px rgba(0,0,0,.04); max-width: 900px;}
-      h1 { font-size: 20px; margin: 0 0 12px; }
-      .row { display: flex; gap: 24px; flex-wrap: wrap; }
-      .col { flex: 1 1 280px; }
-      button { padding:10px 14px; border-radius:8px; border:0; cursor:pointer; }
-      .btn { background:#111827; color:white; }
-      table { border-collapse: collapse; width: 100%; }
+      .wrap { display: grid; gap: 16px; max-width: 1000px; }
+      .card { padding:16px; border:1px solid #e5e7eb; border-radius:12px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+      h1 { margin: 0 0 8px; font-size: 20px; }
+      label { display: block; margin: 8px 0 4px; }
+      input, select, button, textarea { padding:8px; border-radius:8px; border:1px solid #d1d5db; width:100%; }
+      .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .btn { cursor: pointer; background:#111827; color:white; border:0; }
+      table { border-collapse: collapse; width:100%; }
       th, td { text-align:left; padding:8px; border-bottom:1px solid #eee; }
       small { color:#6b7280; }
+      .pill { padding:4px 8px; border-radius:999px; background:#e5e7eb; display:inline-block; margin-right:6px; margin-bottom:6px; }
+      .flex { display:flex; gap: 8px; }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>SMARTi EMS</h1>
-      <div class="row">
-        <div class="col">
-          <p><strong>Dynamic Power:</strong> <span id="dyn">{{ dynamic_power|round(0) }} W</span></p>
-          <p><strong>Target:</strong> <span id="target">{{ energy_target|round(2) }}</span> kWh ({{ (energy_target*1000)|round(0) }} W)</p>
-          <p><small>Category 1 devices are managed here. The process runs every 30s with backoff.</small></p>
-        </div>
-        <div class="col">
+    <div class="wrap">
+      <div class="card">
+        <h1>SMARTi EMS</h1>
+        <p><strong>Dynamic Power:</strong> <span id="dyn">{{ dyn|round(0) }}</span> W
+        &nbsp; | &nbsp; <strong>Target:</strong> <span id="target">{{ (cfg.energy_target_kw or 0)|round(2) }}</span> kWh
+        &nbsp; | &nbsp; <strong>Gap:</strong> <span id="gap">{{ (st.last_gap_w or 0)|round(0) }}</span> W</p>
+        <div class="flex">
           <button class="btn" onclick="step()">Run step now</button>
+          <button onclick="refresh()">Refresh</button>
         </div>
       </div>
 
-      <h3>Category 1 devices</h3>
-      <table>
-        <thead><tr><th>Entity</th></tr></thead>
-        <tbody>
-          {% for e in cat1 %}
-            <tr><td>{{ e }}</td></tr>
-          {% endfor %}
-          {% if cat1|length == 0 %}
-            <tr><td><em>No devices added</em></td></tr>
-          {% endif %}
-        </tbody>
-      </table>
+      <div class="card">
+        <h2>Configuration</h2>
+        <label>Power source entity</label>
+        <div class="flex">
+          <select id="power_source"></select>
+          <button onclick="loadPowerSources()">Reload list</button>
+        </div>
+        <div class="row">
+          <div>
+            <label>Energy target (kWh)</label>
+            <input id="energy_target" type="number" min="0" step="0.1" value="{{ (cfg.energy_target_kw or 0) }}"/>
+          </div>
+          <div>
+            <label>Mode</label>
+            <select id="mode">
+              <option value="nettleie" {{ 'selected' if cfg.mode == 'nettleie' else '' }}>Nettleie</option>
+              <option value="pris"     {{ 'selected' if cfg.mode == 'pris' else '' }}>Pris</option>
+              <option value="flex"     {{ 'selected' if cfg.mode == 'flex' else '' }}>Flex</option>
+            </select>
+          </div>
+        </div>
+
+        <h3>Category 1 (priority order: top = first to turn off)</h3>
+        <div class="flex">
+          <select id="all_entities"></select>
+          <button onclick="addCat1()">Add</button>
+        </div>
+        <div id="cat1_list"></div>
+
+        <p><button class="btn" onclick="save()">Save</button></p>
+        <small>Config is stored inside the add-on at <code>/data/config.json</code>. No HA helpers are used.</small>
+      </div>
     </div>
 
     <script>
-      async function step(){
+      let cfg = {{ cfg | tojson }};
+
+      async function step() {
         await fetch('./api/step', {method:'POST'});
+        await refresh();
+      }
+      async function refresh() {
         const s = await (await fetch('./api/status')).json();
         document.querySelector('#dyn').textContent = Math.round(s.dynamic_power_w);
         document.querySelector('#target').textContent = (s.energy_target_kw).toFixed(2);
+        document.querySelector('#gap').textContent = Math.round(s.gap_w);
       }
+
+      async function loadPowerSources() {
+        const list = await (await fetch('./api/power-sources')).json();
+        const sel = document.querySelector('#power_source');
+        sel.innerHTML = '';
+        list.forEach(it => {
+          const opt = document.createElement('option');
+          opt.value = it.entity_id;
+          opt.textContent = `${it.name} (${it.entity_id}) [${it.unit}]`;
+          sel.appendChild(opt);
+        });
+        if (cfg.power_source_entity) sel.value = cfg.power_source_entity;
+      }
+
+      async function loadEntities() {
+        const list = await (await fetch('./api/entities?domain=switch,climate')).json();
+        const sel = document.querySelector('#all_entities');
+        sel.innerHTML = '';
+        list.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.entity_id;
+          opt.textContent = `${s.attributes?.friendly_name || s.entity_id} (${s.entity_id})`;
+          sel.appendChild(opt);
+        });
+      }
+
+      function renderCat1() {
+        const wrap = document.querySelector('#cat1_list');
+        wrap.innerHTML = '';
+        (cfg.category1 || []).forEach((eid, idx) => {
+          const div = document.createElement('div');
+          div.className = 'pill';
+          div.textContent = `${idx+1}. ${eid}`;
+          div.onclick = () => { if (confirm('Remove ' + eid + '?')) { cfg.category1 = cfg.category1.filter(x => x!==eid); renderCat1(); } };
+          wrap.appendChild(div);
+        });
+      }
+      function addCat1() {
+        const sel = document.querySelector('#all_entities');
+        const eid = sel.value;
+        if (!eid) return;
+        cfg.category1 = cfg.category1 || [];
+        if (!cfg.category1.includes(eid)) cfg.category1.push(eid);
+        renderCat1();
+      }
+
+      async function save() {
+        const payload = {
+          power_source_entity: document.querySelector('#power_source').value || cfg.power_source_entity || '',
+          energy_target_kw: parseFloat(document.querySelector('#energy_target').value || '0') || 0,
+          mode: document.querySelector('#mode').value || 'nettleie',
+          category1: cfg.category1 || [],
+          category2: cfg.category2 || [],
+          category3: cfg.category3 || [],
+        };
+        const res = await (await fetch('./api/config', {method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload)})).json();
+        cfg = res.config;
+        alert('Saved!');
+      }
+
+      // init
+      loadPowerSources();
+      loadEntities();
+      renderCat1();
+      refresh();
     </script>
   </body>
 </html>

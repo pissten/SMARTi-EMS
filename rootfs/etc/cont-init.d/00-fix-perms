@@ -1,3 +1,4 @@
 #!/usr/bin/with-contenv bash
 set -e
+mkdir -p /data
 chown -R root:root /app

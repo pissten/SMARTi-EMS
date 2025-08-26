@@ -5,16 +5,11 @@ FROM ${BUILD_FROM}
 COPY app/requirements.txt /app/requirements.txt
 RUN pip3 install --no-cache-dir -r /app/requirements.txt
 
-# Copy application
+# Copy application and s6 setup
 COPY app /app
-
-# s6 services and init
 COPY rootfs/ /
 
-# Make sure scripts are executable
+# Make scripts executable
 RUN chmod +x /etc/services.d/ems/run /etc/cont-init.d/00-fix-perms
 
-# Environment
 ENV PYTHONUNBUFFERED=1
-
-# s6 will start our service via /etc/services.d/ems/run
