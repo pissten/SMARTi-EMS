@@ -1,6 +1,6 @@
-fastapi
-uvicorn[standard]
-websockets
-httpx
-pydantic
-jinja2
+fastapi==0.111.0
+uvicorn==0.30.1
+httpx==0.27.0
+websockets==12.0
+pydantic==2.8.2
+jinja2==3.1.4
