@@ -23,3 +23,4 @@ schema:
   log_level: list(debug|info|warning|error)?
   loop_interval: int?
   action_delay: int?
+image: ghcr.io/prosono/{arch}-addon-smarti_ems

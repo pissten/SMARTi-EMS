@@ -1,15 +1,17 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base-python:14.3.3
+ARG BUILD_FROM=ghcr.io/home-assistant/{arch}-base:latest
 FROM ${BUILD_FROM}
 
-# Install Python deps
+SHELL ["/bin/ash", "-o", "pipefail", "-c"]
+
+RUN apk add --no-cache python3 py3-pip && \
+    python3 -m ensurepip || true && \
+    pip3 install --no-cache-dir --upgrade pip
+
 COPY app/requirements.txt /app/requirements.txt
 RUN pip3 install --no-cache-dir -r /app/requirements.txt
 
-# Copy application and s6 setup
 COPY app /app
 COPY rootfs/ /
 
-# Make scripts executable
 RUN chmod +x /etc/services.d/ems/run /etc/cont-init.d/00-fix-perms
-
 ENV PYTHONUNBUFFERED=1
