@@ -1,6 +1,6 @@
 # smarti-ems/config.yaml
 name: SMARTi EMS
-version: "1.0.6"   # bump
+version: "1.0.8"   # bump
 slug: smarti_ems
 arch: [amd64, aarch64, armv7]
 ingress: true
