@@ -10,4 +10,5 @@ ingress: true
 ingress_entry: /
 homeassistant_api: true
 hassio_api: true
-image: ghcr.io/prosono/{arch}-addon-smarti_ems
+
+image: ghcr.io/prosono/{arch}-addon-smarti-ems
