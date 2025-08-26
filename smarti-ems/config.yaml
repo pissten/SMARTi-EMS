@@ -1,26 +1,13 @@
 name: SMARTi EMS
-version: "1.0.0"
+version: "1.0.2"           # bump when you push new images
 slug: smarti_ems
 description: "SMARTi Energy Management System add-on with its own UI and engine"
-url: https://github.com/smarti-dev/hassio-addons/tree/main/smarti-ems
 arch:
   - amd64
   - aarch64
   - armv7
-startup: services
-boot: auto
 ingress: true
 ingress_entry: /
-panel_icon: mdi:lightning-bolt
 homeassistant_api: true
 hassio_api: true
-stdin: false
-options:
-  log_level: info
-  loop_interval: 30
-  action_delay: 90
-schema:
-  log_level: list(debug|info|warning|error)?
-  loop_interval: int?
-  action_delay: int?
 image: ghcr.io/prosono/{arch}-addon-smarti_ems
