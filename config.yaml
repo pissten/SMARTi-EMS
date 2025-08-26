@@ -1,0 +1,34 @@
+name: SMARTi EMS
+version: "0.1.0"
+slug: smarti_ems
+description: "SMARTi Energy Management System with integrated UI"
+url: https://github.com/smarti-dev/hassio-addons/tree/main/smarti-ems
+arch:
+  - amd64
+  - aarch64
+  - armv7
+startup: services
+boot: auto
+ingress: true
+ingress_entry: /
+panel_icon: mdi:lightning-bolt
+homeassistant_api: true
+hassio_api: true
+stdin: false
+map:
+  - share:rw
+  - config:rw
+options:
+  energy_target: 10.0
+  price_zone: NO4
+  mode_nettleie: true
+  mode_pris: false
+  mode_flex: false
+  log_level: info
+schema:
+  energy_target: float?
+  price_zone: str?
+  mode_nettleie: bool?
+  mode_pris: bool?
+  mode_flex: bool?
+  log_level: list(debug|info|warning|error)?

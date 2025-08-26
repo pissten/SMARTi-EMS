@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SMARTi EMS</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 16px; }
+      .card { padding:16px; border:1px solid #e5e7eb; border-radius:12px; box-shadow: 0 1px 2px rgba(0,0,0,.04); max-width: 900px;}
+      h1 { font-size: 20px; margin: 0 0 12px; }
+      .row { display: flex; gap: 24px; flex-wrap: wrap; }
+      .col { flex: 1 1 280px; }
+      button { padding:10px 14px; border-radius:8px; border:0; cursor:pointer; }
+      .btn { background:#111827; color:white; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { text-align:left; padding:8px; border-bottom:1px solid #eee; }
+      small { color:#6b7280; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>SMARTi EMS</h1>
+      <div class="row">
+        <div class="col">
+          <p><strong>Dynamic Power:</strong> <span id="dyn">{{ dynamic_power|round(0) }} W</span></p>
+          <p><strong>Target:</strong> <span id="target">{{ energy_target|round(2) }}</span> kWh ({{ (energy_target*1000)|round(0) }} W)</p>
+          <p><small>Category 1 devices are managed here. The process runs every 30s with backoff.</small></p>
+        </div>
+        <div class="col">
+          <button class="btn" onclick="step()">Run step now</button>
+        </div>
+      </div>
+
+      <h3>Category 1 devices</h3>
+      <table>
+        <thead><tr><th>Entity</th></tr></thead>
+        <tbody>
+          {% for e in cat1 %}
+            <tr><td>{{ e }}</td></tr>
+          {% endfor %}
+          {% if cat1|length == 0 %}
+            <tr><td><em>No devices added</em></td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      async function step(){
+        await fetch('./api/step', {method:'POST'});
+        const s = await (await fetch('./api/status')).json();
+        document.querySelector('#dyn').textContent = Math.round(s.dynamic_power_w);
+        document.querySelector('#target').textContent = (s.energy_target_kw).toFixed(2);
+      }
+    </script>
+  </body>
+</html>
