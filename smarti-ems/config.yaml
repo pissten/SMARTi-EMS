@@ -1,14 +1,9 @@
 name: SMARTi EMS
-version: "1.0.2"           # bump when you push new images
+version: "1.0.4"              # bump every release
 slug: smarti_ems
-description: "SMARTi Energy Management System add-on with its own UI and engine"
-arch:
-  - amd64
-  - aarch64
-  - armv7
+arch: [amd64, aarch64, armv7]
 ingress: true
 ingress_entry: /
 homeassistant_api: true
 hassio_api: true
-
 image: ghcr.io/prosono/{arch}-addon-smarti-ems

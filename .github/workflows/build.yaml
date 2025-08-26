@@ -18,10 +18,13 @@ jobs:
         include:
           - arch: amd64
             platform: linux/amd64
+            base: ghcr.io/home-assistant/amd64-base:latest
           - arch: aarch64
             platform: linux/arm64
+            base: ghcr.io/home-assistant/aarch64-base:latest
           - arch: armv7
             platform: linux/arm/v7
+            base: ghcr.io/home-assistant/armv7-base:latest
 
     env:
       ADDON_DIR: smarti-ems
@@ -58,7 +61,7 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           build-args: |
-            BUILD_FROM=ghcr.io/hassio-addons/base-python:14.3.3
+            BUILD_FROM=${{ matrix.base }}
           tags: |
             ghcr.io/${{ steps.lc.outputs.owner_lc }}/${{ matrix.arch }}-addon-${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
             ghcr.io/${{ steps.lc.outputs.owner_lc }}/${{ matrix.arch }}-addon-${{ env.IMAGE_NAME }}:latest
