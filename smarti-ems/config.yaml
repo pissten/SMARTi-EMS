@@ -1,10 +1,20 @@
-# smarti-ems/config.yaml
-name: SMARTi EMS
-version: "1.0.8"   # bump
-slug: smarti_ems
-arch: [amd64, aarch64, armv7]
-ingress: true
-ingress_entry: /
+name: "SMARTi EMS"
+slug: "smarti_ems"
+description: "Energy Management for Home Assistant"
+version: "1.0.8"
+url: "https://github.com/Prosono/SMARTi-EMS"
+
+arch:
+  - amd64
+  - aarch64
+  - armv7
+
+startup: application
 homeassistant_api: true
-hassio_api: true
-image: ghcr.io/prosono/{arch}-addon-smarti-ems
+
+ingress: true
+ingress_port: 8099
+ingress_entry: /
+
+panel_icon: "mdi:home-lightning-bolt"
+panel_title: "SMARTi EMS"
