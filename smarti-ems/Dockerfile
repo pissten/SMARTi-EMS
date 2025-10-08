@@ -11,7 +11,7 @@ RUN apt-get update \
 COPY app/requirements.txt /app/requirements.txt
 
 # Install deps (prefer wheels)
-RUN pip3 install --no-cache-dir --prefer-binary -r /app/requirements.txt
+RUN pip3 install --no-cache-dir --prefer-binary --break-system-packages -r /app/requirements.txt
 
 # Copy app + s6 services
 COPY app /app
